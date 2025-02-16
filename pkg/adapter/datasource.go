@@ -153,14 +153,15 @@ func (d *Datasource) GetPage(ctx context.Context, request *Request) (*Response, 
 	if parseErr != nil {
 		return nil, parseErr
 	}
+
 	cursor := 0
 	if request.Cursor != "" {
 		cursor, _ = strconv.Atoi(request.Cursor)
 	}
 	
-	
-	start := cursor
+	start := min(cursor, len(objects))
 	end := min(cursor + int(request.PageSize), len(objects))
+	
 	// SCAFFOLDING #18 - pkg/adapter/datasource.go: Add response validations.
 	// Add necessary validations to check if the response from the datasource is what is expected.
 	response.Objects = objects[start:end]
@@ -169,7 +170,6 @@ func (d *Datasource) GetPage(ctx context.Context, request *Request) (*Response, 
 		response.NextCursor = strconv.Itoa(end)
 	}
 
-	
 	return response, nil
 }
 
@@ -183,7 +183,6 @@ func ParseResponse(body []byte) (objects []map[string]any, nextCursor string, er
 			Code:    api_adapter_v1.ErrorCode_ERROR_CODE_INTERNAL,
 		}
 	}
-	// cursor = 
 
 	// SCAFFOLDING #18 - pkg/adapter/datasource.go: Add response validations.
 	// Add necessary validations to check if the response from the datasource is what is expected.

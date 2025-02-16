@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"time"
+	"strconv"
 
 	framework "github.com/sgnl-ai/adapter-framework"
 	api_adapter_v1 "github.com/sgnl-ai/adapter-framework/api/adapter/v1"
@@ -31,6 +32,7 @@ const (
 	// SCAFFOLDING #11 - pkg/adapter/datasource.go: Update the set of valid entity types this adapter supports.
 	Users  string = "users"
 	Groups string = "groups"
+	Teams string = "teams"
 )
 
 // Entity contains entity specific information, such as the entity's unique ID attribute and the
@@ -54,7 +56,7 @@ type DatasourceResponse struct {
 	// SCAFFOLDING #13  - pkg/adapter/datasource.go: Add or remove fields in the response as necessary. This is used to unmarshal the response from the SoR.
 
 	// SCAFFOLDING #14 - pkg/adapter/datasource.go: Update `objects` with field name in the SoR response that contains the list of objects.
-	Objects []map[string]any `json:"objects,omitempty"`
+	Objects []map[string]any `json:"teams,omitempty"`
 }
 
 var (
@@ -68,6 +70,9 @@ var (
 		},
 		Groups: {
 			uniqueIDAttrExternalID: "group_id",
+		},
+		Teams: {
+			uniqueIDAttrExternalID: "id",
 		},
 	}
 )
@@ -87,7 +92,7 @@ func (d *Datasource) GetPage(ctx context.Context, request *Request) (*Response, 
 	// SCAFFOLDING #16 - pkg/adapter/datasource.go: Create the SoR API URL
 	// Populate the request with the appropriate path, headers, and query parameters to query the
 	// datasource.
-	url := fmt.Sprintf("%s/api/%s", request.BaseURL, request.EntityExternalID)
+	url := fmt.Sprintf("%s/%s", request.BaseURL, request.EntityExternalID)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -123,7 +128,7 @@ func (d *Datasource) GetPage(ctx context.Context, request *Request) (*Response, 
 			Code:    api_adapter_v1.ErrorCode_ERROR_CODE_INTERNAL,
 		}
 	}
-
+	
 	response := &Response{
 		StatusCode:       res.StatusCode,
 		RetryAfterHeader: res.Header.Get("Retry-After"),
@@ -144,14 +149,27 @@ func (d *Datasource) GetPage(ctx context.Context, request *Request) (*Response, 
 	}
 	// SCAFFOLDING #17-1 - pkg/adapter/datasource.go: To add support for multiple entities that require different parsing functions
 	// Add code to call different ParseResponse functions for each entity response.
-	objects, nextCursor, parseErr := ParseResponse(body)
+	objects, _, parseErr := ParseResponse(body)
 	if parseErr != nil {
 		return nil, parseErr
 	}
+	cursor := 0
+	if request.Cursor != "" {
+		cursor, _ = strconv.Atoi(request.Cursor)
+	}
+	
+	
+	start := cursor
+	end := min(cursor + int(request.PageSize), len(objects))
+	// SCAFFOLDING #18 - pkg/adapter/datasource.go: Add response validations.
+	// Add necessary validations to check if the response from the datasource is what is expected.
+	response.Objects = objects[start:end]
+	response.NextCursor = ""
+	if end != len(objects) {
+		response.NextCursor = strconv.Itoa(end)
+	}
 
-	response.Objects = objects
-	response.NextCursor = nextCursor
-
+	
 	return response, nil
 }
 
@@ -165,6 +183,7 @@ func ParseResponse(body []byte) (objects []map[string]any, nextCursor string, er
 			Code:    api_adapter_v1.ErrorCode_ERROR_CODE_INTERNAL,
 		}
 	}
+	// cursor = 
 
 	// SCAFFOLDING #18 - pkg/adapter/datasource.go: Add response validations.
 	// Add necessary validations to check if the response from the datasource is what is expected.

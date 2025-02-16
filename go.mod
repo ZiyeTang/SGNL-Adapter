@@ -1,6 +1,6 @@
-module github.com/sgnl-ai/adapter-template
+module github.com/ZiyeTang/SGNL-Adapter
 
-go 1.21
+go 1.21.1
 
 require (
 	github.com/sgnl-ai/adapter-framework v0.7.4
@@ -12,6 +12,7 @@ require (
 	github.com/PaesslerAG/jsonpath v0.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/sgnl-ai/adapter-template v0.0.0-20250213210337-92d1202ce8b8 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sosodev/duration v1.2.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
